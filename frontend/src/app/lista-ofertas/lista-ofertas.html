@@ -1,0 +1,44 @@
+<div class="page-header">
+  <h2>Ofertas disponibles</h2>
+  <div class="vista-toggle">
+    <button [class.active]="vista() === 'lista'" (click)="vista.set('lista')" title="Vista lista">☰</button>
+    <button [class.active]="vista() === 'tarjetas'" (click)="vista.set('tarjetas')" title="Vista tarjetas">⊞</button>
+  </div>
+</div>
+
+@if (vista() === 'lista') {
+  <div class="vista-lista">
+    @for (oferta of ofertas(); track oferta.id) {
+      <div class="oferta-card">
+        <div class="oferta-info">
+          <div class="empresa">{{ oferta.empresa }}</div>
+          <div class="puesto">{{ oferta.puesto }}</div>
+          <div class="ubicacion">{{ oferta.capital }}, {{ oferta.pais }}</div>
+        </div>
+        <div class="oferta-salario">{{ oferta.salario | number }}€</div>
+      </div>
+    }
+  </div>
+}
+
+@if (vista() === 'tarjetas') {
+  <div class="carrusel-wrapper">
+    <button class="carrusel-btn izquierda" (click)="scrollCarrusel(-1)">←</button>
+    <div class="vista-tarjetas" #carrusel>
+      @for (oferta of ofertas(); track oferta.id) {
+        <div class="oferta-card">
+          <div class="empresa">{{ oferta.empresa }}</div>
+          <div class="puesto">{{ oferta.puesto }}</div>
+          <div class="tecnologias">
+            @for (tec of oferta.tecnologias; track $index) {
+              <span>{{ tec }}</span>
+            }
+          </div>
+          <div class="salario">{{ oferta.salario | number }}€</div>
+          <div class="ubicacion">{{ oferta.capital }}, {{ oferta.pais }}</div>
+        </div>
+      }
+    </div>
+    <button class="carrusel-btn derecha" (click)="scrollCarrusel(1)">→</button>
+  </div>
+}

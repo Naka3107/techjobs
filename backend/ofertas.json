@@ -1,0 +1,13 @@
+[
+    {
+        "empresa": "Deloitte",
+        "puesto": "Backend Developer",
+        "salario": 1500,
+        "tecnologias": [
+            "Python",
+            "Java"
+        ],
+        "pais": "Germany",
+        "capital": "Berlin"
+    }
+]

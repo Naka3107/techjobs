@@ -1,0 +1,25 @@
+<div class="buscador-header">
+  <h2>Buscar compatibilidad</h2>
+  <p>Introduce tu nombre y salario mínimo para ver las ofertas compatibles con tu perfil</p>
+</div>
+
+<div class="formulario">
+  <input type="text" (input)="nombre.set($any($event).target.value)" placeholder="Tu nombre">
+  <input type="number" (input)="salarioMinimo.set(+$any($event).target.value)" placeholder="Salario mínimo €">
+  <button (click)="buscar()">Buscar</button>
+</div>
+
+@if (estado() === 'ok') {
+  <div class="resultados-header">{{ resultados().length }} ofertas compatibles</div>
+  @for (resultado of resultados(); track $index) {
+    <div class="resultado-card">
+      <div class="empresa">{{ resultado.oferta.empresa }}</div>
+      <div class="detalle">{{ resultado.oferta.puesto }} — {{ resultado.oferta.salario | number }}€/año</div>
+      <div class="coincidencias">
+        @for (tec of resultado.coincidencias; track $index) {
+          <span>{{ tec }}</span>
+        }
+      </div>
+    </div>
+  }
+}

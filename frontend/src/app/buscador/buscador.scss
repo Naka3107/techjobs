@@ -1,0 +1,98 @@
+.buscador-header {
+  margin-bottom: 40px;
+
+  h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 32px;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+    margin-bottom: 8px;
+  }
+
+  p {
+    font-size: 14px;
+    color: #999;
+  }
+}
+
+.formulario {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 48px;
+  flex-wrap: wrap;
+
+  input {
+    flex: 1;
+    min-width: 200px;
+    background: #ffffff;
+    border: 1px solid #e0e0e0;
+    padding: 14px 18px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: #0d0d0d;
+    outline: none;
+    transition: border-color 0.15s;
+    border-radius: 2px;
+
+    &:focus { border-color: #0d0d0d; }
+    &::placeholder { color: #bbb; }
+  }
+
+  button {
+    background: #0d0d0d;
+    color: #ffffff;
+    border: none;
+    padding: 14px 32px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.15s;
+    border-radius: 2px;
+
+    &:hover { background: #333; }
+  }
+}
+
+.resultados-header {
+  font-family: 'DM Serif Display', serif;
+  font-size: 24px;
+  font-weight: 400;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e8e8e5;
+}
+
+.resultado-card {
+  padding: 24px 0;
+  border-bottom: 1px solid #e8e8e5;
+
+  .empresa {
+    font-family: 'DM Serif Display', serif;
+    font-size: 20px;
+    margin-bottom: 6px;
+  }
+
+  .detalle {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 12px;
+  }
+
+  .coincidencias {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+
+    span {
+      font-size: 11px;
+      background: #0d0d0d;
+      color: #ffffff;
+      padding: 4px 10px;
+      border-radius: 2px;
+      letter-spacing: 0.04em;
+    }
+  }
+}
