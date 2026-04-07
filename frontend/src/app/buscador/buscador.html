@@ -8,19 +8,15 @@
   @if (authService.esProgramador()) {
     <input type="number" (input)="salarioMinimo.set(+$any($event).target.value)" placeholder="Salario mínimo (opcional)">
     <input type="text" (input)="pais.set($any($event).target.value)" placeholder="País (opcional)">
+    <input type="number" min="0" (input)="experienciaMinima.set(+$any($event).target.value)" placeholder="Mis años de experiencia (opcional)">
   }
 
   @if (authService.esEmpresa()) {
     <input type="number" min="0" (input)="experienciaMinima.set(+$any($event).target.value)" placeholder="Años de experiencia mínimo (opcional)">
     <input type="text" (input)="ciudad.set($any($event).target.value)" placeholder="Ciudad (opcional)">
 
-    <label class="toggle-ofertas">
-      <input type="checkbox" [checked]="todasLasOfertas()" (change)="todasLasOfertas.set($any($event).target.checked)">
-      Buscar para todas mis ofertas
-    </label>
-
-    <select [disabled]="todasLasOfertas()" (change)="ofertaSeleccionada.set(+$any($event).target.value)">
-      <option value="">Selecciona una oferta</option>
+    <select (change)="ofertaSeleccionada.set(+$any($event).target.value)">
+      <option value="0" disabled selected>Selecciona una oferta</option>
       @for (oferta of ofertasEmpresa(); track oferta.id) {
         <option [value]="oferta.id">{{ oferta.puesto }}</option>
       }
@@ -43,17 +39,8 @@
   @if (authService.esEmpresa()) {
     <div class="resultados-header">{{ resultadosProgramadores().length }} programadores compatibles</div>
     <div class="vista-lista">
-      @for (p of resultadosProgramadores(); track p.id) {
-        <div class="programador-card">
-          <div class="nombre">{{ p.nombre }}</div>
-          <div class="ubicacion">{{ p.ciudad }}, {{ p.pais }}</div>
-          <div class="experiencia">{{ p.experiencia }} años de experiencia</div>
-          <div class="tecnologias">
-            @for (tec of p.tecnologias; track $index) {
-              <span>{{ tec }}</span>
-            }
-          </div>
-        </div>
+      @for (resultado of resultadosProgramadores(); track $index) {
+        <app-programador-card [programador]="resultado" modo="lista" />
       }
     </div>
   }

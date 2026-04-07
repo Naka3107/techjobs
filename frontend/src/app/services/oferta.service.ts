@@ -20,10 +20,11 @@ export class OfertaService {
     return this.http.post(`${this.apiUrl}/ofertas`,[oferta]);
   }
 
-  getOfertasCompatibles(salarioMinimo?: number, pais?: string) {
+  getOfertasCompatibles(salarioMinimo?: number, pais?: string, experiencia?: number) {
     let params = new HttpParams();
     if (salarioMinimo) params = params.set('salario_minimo', salarioMinimo);
     if (pais) params = params.set('pais', pais);
+    if (experiencia) params = params.set('experiencia_minima', experiencia);
     return this.http.get<Oferta[]>(`${this.apiUrl}/ofertas/compatibles`, { params });
   }
 

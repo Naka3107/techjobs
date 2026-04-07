@@ -2,7 +2,7 @@
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, get_jwt
 import sqlite3
-from database import inicializar_db, cargar_ofertas, cargar_oferta, modificar_oferta, cargar_programadores, guardar_oferta, guardar_programador, buscar_ofertas_compatibles, buscar_programadores_compatibles, buscar_programadores_compatibles_empresa, resetear_db
+from database import inicializar_db, cargar_ofertas, cargar_oferta, modificar_oferta, cargar_programadores, guardar_oferta, guardar_programador, buscar_ofertas_compatibles, buscar_programadores_compatibles, resetear_db
 from bolsa import Oferta, Programador, Empresa
 from auth import registrar_usuario, login_usuario
 from services import calcular_compatibilidad
@@ -165,7 +165,8 @@ def get_ofertas_compatibles():
         conn.close()
         return jsonify({"error": "Programador no encontrado para el usuario autenticado"}), 404
     programador_id = programador_id[0]  # extrae el id del resultado
-    ofertas = buscar_ofertas_compatibles(programador_id, conn, salario_minimo=request.args.get("salario_minimo"), pais=request.args.get("pais"))
+    ofertas = buscar_ofertas_compatibles(programador_id, conn, experiencia_minima=request.args.get("experiencia_minima", type=int), salario_minimo=request.args.get("salario_minimo", type=int), pais=request.args.get("pais"))
+    
     conn.close()
     return jsonify([vars(o) for o in ofertas])
 
@@ -201,13 +202,22 @@ def get_programadores_compatibles():
     empresa_id = empresa_id[0]  # extrae el id del resultado
 
     oferta_id = request.args.get("oferta_id")
-    if not oferta_id: # Busca compatibilidades de todas las ofertas de la empresa
-        programadores = buscar_programadores_compatibles_empresa(empresa_id, conn, experiencia=request.args.get("experiencia"), ciudad=request.args.get("ciudad"))
+    if not oferta_id: 
+        conn.close()
+        return jsonify({"error": "Oferta no encontrada"}), 404
     else: # Busca compatibilidades de una oferta concreta
-        programadores = buscar_programadores_compatibles(oferta_id, conn, experiencia=request.args.get("experiencia"), ciudad=request.args.get("ciudad"))
-    
+        oferta = cargar_oferta(int(oferta_id), conn)
+        programadores = buscar_programadores_compatibles(oferta_id, conn, experiencia=request.args.get("experiencia"), ciudad=request.args.get("ciudad")) 
+        resultados = []
+        for p in programadores:
+            compatibilidad = calcular_compatibilidad(p, oferta)
+            resultados.append({
+                "programador": vars(p),
+                "compatibilidad": compatibilidad
+            })
+    resultados_ordenados = sorted(resultados, key= lambda r : r["compatibilidad"]["porcentaje"], reverse=True)
     conn.close()
-    return jsonify([vars(p) for p in programadores])
+    return jsonify(resultados_ordenados)
 
 @app.route("/empresas/ofertas", methods=["GET"])
 @jwt_required()  # token obligatorio
@@ -365,6 +375,13 @@ def actualizar_perfil():
             "UPDATE programadores SET nombre = ?, ciudad = ?, pais = ?, experiencia = ? WHERE id = ?",
             (datos["nombre"], datos["ciudad"], datos["pais"], datos["experiencia"], programador_id)
         )
+        # Actualiza tecnologias
+        conn.cursor().execute("DELETE FROM tecnologias_programador WHERE programador_id = ?", (programador_id,))
+        for tec in datos.get("tecnologias", []):
+            conn.cursor().execute(
+                "INSERT INTO tecnologias_programador (programador_id, tecnologia) VALUES (?, ?)",
+                (programador_id, tec)
+            )
     else:  # empresa
         empresa_id = conn.cursor().execute("SELECT id FROM empresas WHERE usuario_id = ?", (identity,)).fetchone()
         if not empresa_id:
@@ -379,68 +396,6 @@ def actualizar_perfil():
     conn.commit()
     conn.close()
     return jsonify({"mensaje": "Perfil actualizado correctamente"}), 200
-
-@app.route("/perfil/tecnologias", methods=["POST"])
-@jwt_required()  # token obligatorio
-def agregar_tecnologia_perfil():
-    identity = int(get_jwt_identity())
-    claims = get_jwt()
-    rol = claims.get("rol")
-    datos = request.get_json()
-    if not datos or "tecnologias" not in datos:
-        return jsonify({"error": "No se recibieron datos"}), 400
-    conn = get_conn()
-    
-    if rol != "programador":
-        conn.close()
-        return jsonify({"error": "Solo los programadores pueden agregar tecnologías a su perfil"}), 403
-    
-    programador_id = conn.cursor().execute("SELECT id FROM programadores WHERE usuario_id = ?", (identity,)).fetchone()
-    if not programador_id:
-        conn.close()
-        return jsonify({"error": "Programador no encontrado para el usuario autenticado"}), 404
-    programador_id = programador_id[0]
-    
-    for tec in datos["tecnologias"]:
-        conn.cursor().execute(
-            "INSERT INTO tecnologias_programador (programador_id, tecnologia) VALUES (?, ?)",
-            (programador_id, tec)
-        )
-    
-    conn.commit()
-    conn.close()
-    return jsonify({"mensaje": "Tecnologías agregadas correctamente"}), 200
-
-@app.route("/perfil/tecnologias", methods=["DELETE"])
-@jwt_required()  # token obligatorio
-def eliminar_tecnologia_perfil():
-    identity = int(get_jwt_identity())
-    claims = get_jwt()
-    rol = claims.get("rol")
-    datos = request.get_json()
-    if not datos or "tecnologias" not in datos:
-        return jsonify({"error": "No se recibieron datos"}), 400 
-    conn = get_conn()
-    
-    if rol != "programador":
-        conn.close()
-        return jsonify({"error": "Solo los programadores pueden eliminar tecnologías de su perfil"}), 403
-    
-    programador_id = conn.cursor().execute("SELECT id FROM programadores WHERE usuario_id = ?", (identity,)).fetchone()
-    if not programador_id:
-        conn.close()
-        return jsonify({"error": "Programador no encontrado para el usuario autenticado"}), 404
-    programador_id = programador_id[0]
-    
-    for tec in datos["tecnologias"]:
-        conn.cursor().execute(
-            "DELETE FROM tecnologias_programador WHERE programador_id = ? AND tecnologia = ?",
-            (programador_id, tec)
-        )
-    
-    conn.commit()
-    conn.close()
-    return jsonify({"mensaje": "Tecnologías eliminadas correctamente"}), 200
 
 @app.route("/reset", methods=["POST"])
 def reset_db():

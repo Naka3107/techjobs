@@ -5,10 +5,12 @@ import { OfertaService } from '../services/oferta.service';
 import { ProgramadorService } from '../services/programador.service';
 import { AuthService } from '../services/auth';
 import { OfertaCard } from '../oferta-card/oferta-card';
+import { ProgramadorCard } from '../programador-card/programador-card';
+import { ProgramadorResponse } from '../models/programador-response';
 
 @Component({
   selector: 'app-buscador',
-  imports: [OfertaCard],
+  imports: [OfertaCard, ProgramadorCard],
   templateUrl: './buscador.html',
   styleUrl: './buscador.scss',
 })
@@ -23,12 +25,11 @@ export class Buscador implements OnInit {
   pais = signal<string>('');
 
   // Empresa
-  resultadosProgramadores = signal<Programador[]>([]);
+  resultadosProgramadores = signal<ProgramadorResponse[]>([]);
   experienciaMinima = signal<number>(0);
   ciudad = signal<string>('');
   ofertasEmpresa = signal<Oferta[]>([]);
-  ofertaSeleccionada = signal<number | null>(null);
-  todasLasOfertas = signal<boolean>(true);
+  ofertaSeleccionada = signal<number>(0);
 
   estado = signal<'idle' | 'ok' | 'error'>('idle');
   vista = signal<'lista' | 'tarjetas'>('lista');
@@ -52,7 +53,10 @@ export class Buscador implements OnInit {
 
   buscar() {
     if (this.authService.esProgramador()) {
-      this.ofertaService.getOfertasCompatibles(this.salarioMinimo() || undefined, this.pais() || undefined)
+      this.ofertaService.getOfertasCompatibles(
+        this.salarioMinimo() || undefined,
+        this.pais() || undefined,
+        this.experienciaMinima() || undefined)
       .subscribe({
       next: data => {
         this.resultadosOfertas.set(data);
@@ -66,8 +70,12 @@ export class Buscador implements OnInit {
         }
       });
     } else {
+      if(!this.ofertaSeleccionada()) {
+        alert('Selecciona una oferta para buscar programadores compatibles.');
+        return
+      }
       this.programadorService.getProgramadoresCompatibles(
-        this.todasLasOfertas() ? undefined : this.ofertaSeleccionada() || undefined,
+        this.ofertaSeleccionada(),
         this.experienciaMinima() || undefined,
         this.ciudad() || undefined
       ).subscribe({

@@ -114,7 +114,6 @@ export class EditarPerfil {
   actualizarPerfil() {
     if (!this.perfilOriginal()) return;
     if (!confirm('¿Estás seguro que quieres guardar los cambios?')) return;
-    const nuevasTecnologias = this.tecnologiasSeleccionadas()
 
     const datosActualizados: PerfilResponse = {
       nombre: this.nombre(),
@@ -125,16 +124,16 @@ export class EditarPerfil {
       email: this.perfilOriginal()!.email
     };
 
-    this.perfilService.actualizarPerfil(datosActualizados, this.authService.rol()!, this.tecnologiasActuales(), nuevasTecnologias).subscribe({
-      next: () => {
-        alert('Perfil actualizado con éxito');
-        this.tecnologiasActuales.set(nuevasTecnologias);
-        this.router.navigate(['/perfil']);
-      },
-      error: (err) => {
-        console.error('Error al actualizar el perfil', err);
-        alert('Error al actualizar el perfil');
-      }
-    });
+    this.perfilService.actualizarPerfil(datosActualizados, this.authService.rol()!, this.tecnologiasSeleccionadas())
+      .subscribe({
+        next: () => {
+          alert('Perfil actualizado con éxito');
+          this.router.navigate(['/perfil']);
+        },
+        error: (err) => {
+          console.error('Error al actualizar el perfil', err);
+          alert('Error al actualizar el perfil');
+        }
+      });
   }
 }

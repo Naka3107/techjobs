@@ -132,6 +132,7 @@ def cargar_ofertas(conn):
         JOIN empresas e ON e.id = o.empresa_id
     """)
     ofertas_db = cursor.fetchall()  # devuelve lista de tuplas
+    print("Estructura:", ofertas_db[0] if ofertas_db else "vacío")
     cursor.execute("SELECT * FROM tecnologias_oferta")
     tecnologias_db = cursor.fetchall()
     return _construir_oferta_desde_db(ofertas_db, tecnologias_db)
@@ -262,43 +263,6 @@ def buscar_programadores_compatibles(oferta_id, conn, experiencia=None, ciudad=N
         return []
     placeholders_ids = ','.join('?' for _ in programador_ids)
     cursor.execute(f"SELECT * FROM tecnologias_programador WHERE programador_id IN ({placeholders_ids})", programador_ids)
-    tecnologias_db = cursor.fetchall()
-
-    return _construir_programador_desde_db(programadores_db, tecnologias_db)
-
-# Busca programador compatible con todas las ofertas de la empresa
-def buscar_programadores_compatibles_empresa(empresa_id, conn, experiencia=None, ciudad=None):
-    cursor = conn.cursor()
-    
-    query = """
-        SELECT DISTINCT p.*
-        FROM programadores p
-        JOIN tecnologias_programador tp ON tp.programador_id = p.id
-        JOIN tecnologias_oferta tof ON tof.tecnologia = tp.tecnologia
-        JOIN ofertas o ON o.id = tof.oferta_id
-        WHERE o.empresa_id = ?
-    """
-    params = [empresa_id]
-
-    if experiencia:
-        query += " AND p.experiencia >= ?"
-        params.append(experiencia)
-
-    if ciudad:
-        query += " AND p.ciudad = ?"
-        params.append(ciudad)
-
-    query += " GROUP BY p.id"
-
-    cursor.execute(query, params)
-    programadores_db = cursor.fetchall()
-
-    programador_ids = [p[0] for p in programadores_db]
-    if not programador_ids:
-        return []
-    
-    placeholders = ','.join('?' for _ in programador_ids)
-    cursor.execute(f"SELECT * FROM tecnologias_programador WHERE programador_id IN ({placeholders})", programador_ids)
     tecnologias_db = cursor.fetchall()
 
     return _construir_programador_desde_db(programadores_db, tecnologias_db)

@@ -11,15 +11,19 @@ def calcular_compatibilidad(programador, oferta):
 
     # EXPERIENCIA (25%)
     minim_exp = oferta.experiencia_minima or 0
-    if minim_exp == 0 or programador.experiencia >= minim_exp:
+    experiencia_cumple = programador.experiencia >= minim_exp
+    if minim_exp == 0 or experiencia_cumple:
         puntos_exp = 25
     else:
         puntos_exp = (programador.experiencia/minim_exp) * 25
 
     # UBICACION (15%)
-    if programador.ciudad.lower() == oferta.ciudad.lower():
+    ciudad_cumple = programador.ciudad.lower() == oferta.ciudad.lower()
+    pais_cumple = programador.pais.lower() == oferta.pais.lower()
+
+    if ciudad_cumple:
         puntos_ciudad = 15
-    elif programador.pais.lower() == oferta.pais.lower():
+    elif pais_cumple:
         puntos_ciudad = 7
     else:
         puntos_ciudad = 0
@@ -29,10 +33,10 @@ def calcular_compatibilidad(programador, oferta):
     return {
         "porcentaje": total,
         "desglose": {
-            "tecnologias": round(puntos_tecs),
             "tecnologias_coincidentes": list(coincidencias),
             "tecnologias_faltantes": list(tecs_oferta - tecs_programador),
-            "experiencia": round(puntos_exp),
-            "ciudad": round(puntos_ciudad)
+            "experiencia_cumple": experiencia_cumple,
+            "ciudad_cumple": ciudad_cumple,
+            "pais_cumple": pais_cumple
         }
     } 

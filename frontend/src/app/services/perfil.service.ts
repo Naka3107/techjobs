@@ -1,7 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { PerfilResponse } from '../models/perfil-response';
-import { forkJoin } from 'rxjs';
 
 
 @Injectable({ providedIn: 'root'})
@@ -13,10 +12,7 @@ export class PerfilService {
     return this.http.get<PerfilResponse>(`${this.apiUrl}/perfil`);
   }
 
-  actualizarPerfil(datos: PerfilResponse, rol: string, tecnologiasActuales: string[], tecnologiasNuevas: string[]) {
-    const agregar = tecnologiasNuevas.filter(t => !tecnologiasActuales.includes(t));
-    const eliminar = tecnologiasActuales.filter(t => !tecnologiasNuevas.includes(t));
-
+  actualizarPerfil(datos: PerfilResponse, rol: string, tecnologiasNuevas: string[]) {
     const datosFiltrados: any = {
       nombre: datos.nombre,
       ciudad: datos.ciudad,
@@ -24,23 +20,12 @@ export class PerfilService {
     };
 
     if (rol === 'programador') {
-      datosFiltrados.años_experiencia = datos.experiencia;
+      datosFiltrados.experiencia = datos.experiencia;
+      datosFiltrados.tecnologias = tecnologiasNuevas;
     } else if (rol === 'empresa') {
       datosFiltrados.pagina_web = datos.pagina_web;
     }
 
-    const actualizarDatos$ = this.http.put(`${this.apiUrl}/perfil`, datosFiltrados);
-
-    const llamadas = [actualizarDatos$];
-
-    if (agregar.length > 0) {
-      llamadas.push(this.http.post(`${this.apiUrl}/perfil/tecnologias`, { tecnologias: agregar }));
-    }
-    
-    if (eliminar.length > 0) {
-      llamadas.push(this.http.delete(`${this.apiUrl}/perfil/tecnologias`, { body: { tecnologias: eliminar } }));
-    }
-
-    return forkJoin(llamadas);
+    return this.http.put(`${this.apiUrl}/perfil`, datosFiltrados);
   }
 }

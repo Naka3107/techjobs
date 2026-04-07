@@ -1,0 +1,64 @@
+<div class="programador-card" 
+    [class.modo-lista]="modo() === 'lista'"
+    [class.modo-tarjeta]="modo() === 'tarjeta'"
+    (click)="toggle()">
+
+    <div class="programador-info">
+        <div class="nombre">{{ programador().programador.nombre }}</div>
+        <div class="experiencia">{{ programador().programador.experiencia }} años de experiencia</div>
+        <div class="ubicacion">{{ programador().programador.ciudad }}, {{ programador().programador.pais }}</div>
+    </div>
+    <div class="programador-compatibilidad">{{ programador().compatibilidad.porcentaje }}% de compatibilidad</div>
+
+  @if (abierta()) {
+    <div class="programador-detalle">
+      <div class="tecs">
+        @for (tec of programador().programador.tecnologias; track $index) {
+          <span>{{ tec }}</span>
+        }
+      </div>
+
+      <div class="compatibilidades">
+        @if (programador().compatibilidad.desglose.tecnologias_coincidentes.length > 0) {
+          <div class="coincidentes">
+            <span class="label">✓ Tecnologías coincidentes</span>
+            @for (tec of programador().compatibilidad.desglose.tecnologias_coincidentes; track $index) {
+              <span class="tec tec-ok">{{ tec }}</span>
+            }
+          </div>
+        }
+
+        @if (programador().compatibilidad.desglose.tecnologias_faltantes.length > 0) {
+          <div class="faltantes">
+            <span class="label">✗ Tecnologías faltantes</span>
+            @for (tec of programador().compatibilidad.desglose.tecnologias_faltantes; track $index) {
+              <span class="tec tec-ko">{{ tec }}</span>
+            }
+          </div>
+        }
+
+        <div class="criterio">
+          @if (programador().compatibilidad.desglose.experiencia_cumple) {
+            <span class="ok">✓ Experiencia suficiente</span>
+          } @else {
+            <span class="ko">✗ Experiencia insuficiente</span>
+          }
+        </div>
+
+        <div class="criterio">
+          @if (programador().compatibilidad.desglose.ciudad_cumple) {
+            <span class="ok">✓ Misma ciudad</span>
+          } @else if (programador().compatibilidad.desglose.pais_cumple) {
+            <span class="ok">~ Mismo país</span>
+          } @else {
+            <span class="ko">✗ Ubicación diferente</span>
+          }
+        </div>
+      </div>
+
+      <a href="mailto:info@techjobsbcn.com" (click)="$event.stopPropagation()">
+        Contactar con {{ programador().programador.nombre }}
+      </a>
+    </div>
+  }
+</div>
