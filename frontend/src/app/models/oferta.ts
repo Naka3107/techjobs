@@ -4,6 +4,7 @@ export interface Oferta {
   nombre_empresa: string;
   puesto: string;
   salario: number;
+  experiencia_minima: number,
   pais: string;
   ciudad: string;
   tecnologias: string[];

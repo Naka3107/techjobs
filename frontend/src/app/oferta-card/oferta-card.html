@@ -6,6 +6,7 @@
   <div class="oferta-info">
     <div class="empresa">{{ oferta().nombre_empresa }}</div>
     <div class="puesto">{{ oferta().puesto }}</div>
+    <div class="experiencia">Exp. mínima: {{ oferta().experiencia_minima }} años</div>
     <div class="ubicacion">{{ oferta().ciudad }}, {{ oferta().pais }}</div>
   </div>
   <div class="oferta-salario">{{ oferta().salario | number }}€</div>

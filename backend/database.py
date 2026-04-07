@@ -30,7 +30,7 @@ def inicializar_db(conn):
         nombre TEXT NOT NULL,
         ciudad TEXT NOT NULL,
         pais TEXT NOT NULL,
-        años_experiencia INTEGER NOT NULL,
+        experiencia INTEGER NOT NULL,
         FOREIGN KEY (usuario_id) REFERENCES usuarios(id)
         );
 
@@ -48,6 +48,7 @@ def inicializar_db(conn):
         salario INTEGER NOT NULL,
         pais TEXT,
         ciudad TEXT,
+        experiencia_minima NOT NULL DEFAULT 0,
         FOREIGN KEY (empresa_id) REFERENCES empresas(id)
         );
     
@@ -64,8 +65,8 @@ def guardar_oferta(oferta, conn):
     cursor = conn.cursor()
 
     cursor.execute(
-    "INSERT INTO ofertas (empresa_id, puesto, salario, pais, ciudad) VALUES (?, ?, ?, ?, ?)",
-    (oferta.empresa_id, oferta.puesto, oferta.salario, oferta.pais, oferta.ciudad)
+    "INSERT INTO ofertas (empresa_id, puesto, salario, pais, ciudad, experiencia_minima) VALUES (?, ?, ?, ?, ?, ?)",
+    (oferta.empresa_id, oferta.puesto, oferta.salario, oferta.pais, oferta.ciudad, oferta.experiencia_minima)
     )
     oferta_id = cursor.lastrowid
     for tecnologia in oferta.tecnologias:
@@ -79,8 +80,8 @@ def guardar_programador(programador,conn):
     cursor = conn.cursor()
 
     cursor.execute(
-    "INSERT INTO programadores (nombre, ciudad, pais, años_experiencia) VALUES (?, ?, ?, ?)",
-    (programador.nombre, programador.ciudad, programador.pais, programador.años_experiencia)
+    "INSERT INTO programadores (nombre, ciudad, pais, experiencia) VALUES (?, ?, ?, ?)",
+    (programador.nombre, programador.ciudad, programador.pais, programador.experiencia)
     )
     programador_id = cursor.lastrowid
     for tecnologia in programador.tecnologias:
@@ -100,7 +101,8 @@ def _construir_oferta_desde_db(oferta_db, tecnologias_db):
             salario=oferta[3],
             pais=oferta[4],
             ciudad=oferta[5],
-            nombre_empresa=oferta[6],
+            experiencia_minima=oferta[6],
+            nombre_empresa=oferta[7],
             tecnologias=tecnologias
         )
         resultados.append(oferta)
@@ -116,7 +118,7 @@ def _construir_programador_desde_db(programador_db, tecnologias_db):
             nombre=programador[2],
             ciudad=programador[3],
             pais=programador[4],
-            años_experiencia=programador[5],
+            experiencia=programador[5],
             tecnologias=tecnologias
         )
         programadores.append(programador)
@@ -150,8 +152,8 @@ def cargar_oferta(oferta_id, conn):
 def modificar_oferta(oferta_id, datos, conn):
     cursor = conn.cursor()
     cursor.execute(
-        "UPDATE ofertas SET puesto = ?, salario = ?, pais = ?, ciudad = ? WHERE id = ?",
-        (datos["puesto"], datos["salario"], datos["pais"], datos["ciudad"], oferta_id)
+        "UPDATE ofertas SET puesto = ?, salario = ?, experiencia_minima = ?, pais = ?, ciudad = ? WHERE id = ?",
+        (datos["puesto"], datos["salario"], datos["experiencia_minima"], datos["pais"], datos["ciudad"], oferta_id)
     )
     cursor.execute("DELETE FROM tecnologias_oferta WHERE oferta_id = ?", (oferta_id,))
     for tec in datos["tecnologias"]:
@@ -168,7 +170,7 @@ def cargar_programadores(conn):
     tecnologias_db = cursor.fetchall()
     return _construir_programador_desde_db(programadores_db, tecnologias_db)
 
-def buscar_ofertas_compatibles(programador_id, conn, salario_minimo=None, pais=None):
+def buscar_ofertas_compatibles(programador_id, conn, experiencia_minima = None, salario_minimo=None, pais=None):
     cursor = conn.cursor()
     cursor.execute("""
         SELECT tecnologia FROM tecnologias_programador WHERE programador_id = ?
@@ -197,6 +199,10 @@ def buscar_ofertas_compatibles(programador_id, conn, salario_minimo=None, pais=N
         query += " AND o.pais = ?"
         params.append(pais)
 
+    if experiencia_minima:
+        query += " AND o.experiencia_minima <= ?"
+        params.append(experiencia_minima)
+
     query += " GROUP BY o.id"
 
     cursor.execute(query, params)
@@ -214,7 +220,8 @@ def buscar_ofertas_compatibles(programador_id, conn, salario_minimo=None, pais=N
 
     return _construir_oferta_desde_db(ofertas_db, tecnologias_db)
 
-def buscar_programadores_compatibles(oferta_id, conn, años_experiencia_minimo=None, ciudad=None):
+# Busca programador compatible con oferta específica
+def buscar_programadores_compatibles(oferta_id, conn, experiencia=None, ciudad=None):
     cursor = conn.cursor()
     cursor.execute("""
         SELECT tecnologia FROM tecnologias_oferta WHERE oferta_id = ?
@@ -235,9 +242,9 @@ def buscar_programadores_compatibles(oferta_id, conn, años_experiencia_minimo=N
     
     params = list(tecnologias_oferta)
 
-    if años_experiencia_minimo:
-        query += " AND p.años_experiencia >= ?"
-        params.append(años_experiencia_minimo)
+    if experiencia:
+        query += " AND p.experiencia >= ?"
+        params.append(experiencia)
 
     if ciudad:
         query += " AND p.ciudad = ?"
@@ -255,6 +262,43 @@ def buscar_programadores_compatibles(oferta_id, conn, años_experiencia_minimo=N
         return []
     placeholders_ids = ','.join('?' for _ in programador_ids)
     cursor.execute(f"SELECT * FROM tecnologias_programador WHERE programador_id IN ({placeholders_ids})", programador_ids)
+    tecnologias_db = cursor.fetchall()
+
+    return _construir_programador_desde_db(programadores_db, tecnologias_db)
+
+# Busca programador compatible con todas las ofertas de la empresa
+def buscar_programadores_compatibles_empresa(empresa_id, conn, experiencia=None, ciudad=None):
+    cursor = conn.cursor()
+    
+    query = """
+        SELECT DISTINCT p.*
+        FROM programadores p
+        JOIN tecnologias_programador tp ON tp.programador_id = p.id
+        JOIN tecnologias_oferta tof ON tof.tecnologia = tp.tecnologia
+        JOIN ofertas o ON o.id = tof.oferta_id
+        WHERE o.empresa_id = ?
+    """
+    params = [empresa_id]
+
+    if experiencia:
+        query += " AND p.experiencia >= ?"
+        params.append(experiencia)
+
+    if ciudad:
+        query += " AND p.ciudad = ?"
+        params.append(ciudad)
+
+    query += " GROUP BY p.id"
+
+    cursor.execute(query, params)
+    programadores_db = cursor.fetchall()
+
+    programador_ids = [p[0] for p in programadores_db]
+    if not programador_ids:
+        return []
+    
+    placeholders = ','.join('?' for _ in programador_ids)
+    cursor.execute(f"SELECT * FROM tecnologias_programador WHERE programador_id IN ({placeholders})", programador_ids)
     tecnologias_db = cursor.fetchall()
 
     return _construir_programador_desde_db(programadores_db, tecnologias_db)

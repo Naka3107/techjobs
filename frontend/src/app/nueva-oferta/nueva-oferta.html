@@ -14,6 +14,11 @@
     </div>
 
     <div class="field">
+      <label>Experiencia Mínima</label>
+      <input type="number" min="0" (input)="experienciaMinima.set(+$any($event).target.value)" placeholder="Mínimo de años de experiencia">
+    </div>
+
+    <div class="field">
       <label>País</label>
       <select (change)="seleccionarPais(PAISES[$any($event).target.selectedIndex - 1])">
         <option value="" disabled selected>Selecciona tu país</option>

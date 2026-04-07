@@ -1,4 +1,4 @@
-<div class="editar-oferta-container">
+<div class="editar-oferta">
   <h2>Editar Oferta</h2>
 
   <div class="formulario">
@@ -11,6 +11,11 @@
     <div class="field">
       <label>Salario</label>
       <input type="number" min="0" [value]="salario()" (input)="salario.set($any($event).target.value)" placeholder="Salario en euros">
+    </div>
+
+    <div class="field">
+      <label>Experiencia</label>
+      <input type="number" min="0" [value]="experienciaMinima()" (input)="experienciaMinima.set(+$any($event).target.value)" placeholder="Mínimo de años de experiencia">
     </div>
 
     <div class="field">

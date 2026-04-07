@@ -25,6 +25,7 @@ export class EditarOferta {
   ciudad = signal('');
   pais = signal('');
   salario = signal(0);
+  experienciaMinima = signal(0);
   tecnologiasActuales= signal<string[]>([]);
   tecnologiasSeleccionadas = signal<string[]>([]);
 
@@ -86,10 +87,11 @@ export class EditarOferta {
     const ciudadCambiada = this.ciudad() !== original.ciudad;
     const paisCambiado = this.pais() !== original.pais;
     const salarioCambiado = this.salario() !== (original.salario ?? 0);
+    const experienciaCambiada = this.experienciaMinima() !== (original.experiencia_minima ?? 0);
     const tecnologiasCambiadas = JSON.stringify([...this.tecnologiasSeleccionadas()].sort()) !== 
                      JSON.stringify([...this.tecnologiasActuales()].sort());
     
-    return puestoCambiado || ciudadCambiada || paisCambiado || salarioCambiado || tecnologiasCambiadas;
+    return puestoCambiado || ciudadCambiada || paisCambiado || salarioCambiado || experienciaCambiada || tecnologiasCambiadas;
   });
   
   ngOnInit() {
@@ -106,6 +108,7 @@ export class EditarOferta {
         this.ciudad.set(data.ciudad);
         this.pais.set(data.pais);
         this.salario.set(data.salario ?? 0);
+        this.experienciaMinima.set(data.experiencia_minima ?? 0);
         const paisEncontrado = PAISES.find(p => p.nombre === data.pais);
         if (paisEncontrado) this.paisSeleccionado.set(paisEncontrado);
         this.tecnologiasActuales.set(data.tecnologias ?? []);
@@ -123,6 +126,7 @@ export class EditarOferta {
     const datosActualizados = {
       puesto: this.puesto(),
       salario: this.salario(),
+      experiencia_minima: this.experienciaMinima(),
       pais: this.pais(),
       ciudad: this.ciudad(),
       tecnologias: this.tecnologiasSeleccionadas()

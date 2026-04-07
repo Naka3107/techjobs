@@ -2,7 +2,7 @@
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, get_jwt
 import sqlite3
-from database import inicializar_db, cargar_ofertas, cargar_oferta, modificar_oferta, cargar_programadores, guardar_oferta, guardar_programador, buscar_ofertas_compatibles, buscar_programadores_compatibles, resetear_db
+from database import inicializar_db, cargar_ofertas, cargar_oferta, modificar_oferta, cargar_programadores, guardar_oferta, guardar_programador, buscar_ofertas_compatibles, buscar_programadores_compatibles, buscar_programadores_compatibles_empresa, resetear_db
 from bolsa import Oferta, Programador, Empresa
 from auth import registrar_usuario, login_usuario
 
@@ -81,7 +81,7 @@ def post_ofertas():
         return jsonify({"error": "Empresa no encontrada para el usuario autenticado"}), 404   
     empresa_id = empresa_id[0]  # extrae el id del resultado
     for oferta in datos:
-        guardar_oferta(Oferta(id=None, empresa_id=empresa_id, **oferta),conn)
+        guardar_oferta(Oferta(id=None, empresa_id=empresa_id, nombre_empresa="", **oferta),conn)
     conn.commit()
     conn.close()
     return jsonify({"mensaje": "Ofertas añadidas correctamente"}), 201
@@ -201,12 +201,9 @@ def get_programadores_compatibles():
 
     oferta_id = request.args.get("oferta_id")
     if not oferta_id: # Busca compatibilidades de todas las ofertas de la empresa
-        programadores = []
-        ofertas_empresa = conn.cursor().execute("SELECT id FROM ofertas WHERE empresa_id = ?", (empresa_id,)).fetchall()
-        for oferta in ofertas_empresa:
-            programadores += buscar_programadores_compatibles(oferta[0], conn, años_experiencia_minimo=request.args.get("años_experiencia_minimo"), ciudad=request.args.get("ciudad"))
+        programadores = buscar_programadores_compatibles_empresa(empresa_id, conn, experiencia=request.args.get("experiencia"), ciudad=request.args.get("ciudad"))
     else: # Busca compatibilidades de una oferta concreta
-        programadores = buscar_programadores_compatibles(oferta_id, conn, años_experiencia_minimo=request.args.get("años_experiencia_minimo"), ciudad=request.args.get("ciudad"))
+        programadores = buscar_programadores_compatibles(oferta_id, conn, experiencia=request.args.get("experiencia"), ciudad=request.args.get("ciudad"))
     
     conn.close()
     return jsonify([vars(p) for p in programadores])
@@ -227,10 +224,10 @@ def get_ofertas_empresa():
         return jsonify({"error": "Empresa no encontrada para el usuario autenticado"}), 404
     empresa_id = empresa_id[0]  # extrae el id del resultado
 
-    ofertas = conn.cursor().execute("SELECT id, puesto, salario, pais, ciudad FROM ofertas WHERE empresa_id = ?", (empresa_id,)).fetchall()
+    todas = cargar_ofertas(conn)
+    ofertas = [o for o in todas if o.empresa_id == empresa_id]
     conn.close()
-    resultados = [{"id": o[0], "puesto": o[1], "salario": o[2], "pais": o[3], "ciudad": o[4]} for o in ofertas]
-    return jsonify(resultados)
+    return jsonify([vars(o) for o in ofertas])
 
 @app.route("/registro/programador", methods=["POST"])
 def registro_programador():
@@ -244,8 +241,8 @@ def registro_programador():
     
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO programadores (usuario_id, nombre, ciudad, pais, años_experiencia) VALUES (?, ?, ?, ?, ?)",
-        (usuario_id, datos["nombre"], datos["ciudad"], datos["pais"], datos["años_experiencia"])
+        "INSERT INTO programadores (usuario_id, nombre, ciudad, pais, experiencia) VALUES (?, ?, ?, ?, ?)",
+        (usuario_id, datos["nombre"], datos["ciudad"], datos["pais"], datos["experiencia"])
     )
     programador_id = cursor.lastrowid
     
@@ -306,7 +303,7 @@ def get_perfil():
             return jsonify({"error": "Programador no encontrado para el usuario autenticado"}), 404
         programador_id = programador_id[0]
         perfil = conn.cursor().execute("""
-            SELECT p.nombre, p.ciudad, p.pais, p.años_experiencia, GROUP_CONCAT(tp.tecnologia), u.email
+            SELECT p.nombre, p.ciudad, p.pais, p.experiencia, GROUP_CONCAT(tp.tecnologia), u.email
             FROM programadores p 
             JOIN tecnologias_programador tp ON p.id = tp.programador_id
             JOIN usuarios u ON u.id = p.usuario_id
@@ -364,8 +361,8 @@ def actualizar_perfil():
             return jsonify({"error": "Programador no encontrado para el usuario autenticado"}), 404
         programador_id = programador_id[0]
         conn.cursor().execute(
-            "UPDATE programadores SET nombre = ?, ciudad = ?, pais = ?, años_experiencia = ? WHERE id = ?",
-            (datos["nombre"], datos["ciudad"], datos["pais"], datos["años_experiencia"], programador_id)
+            "UPDATE programadores SET nombre = ?, ciudad = ?, pais = ?, experiencia = ? WHERE id = ?",
+            (datos["nombre"], datos["ciudad"], datos["pais"], datos["experiencia"], programador_id)
         )
     else:  # empresa
         empresa_id = conn.cursor().execute("SELECT id FROM empresas WHERE usuario_id = ?", (identity,)).fetchone()

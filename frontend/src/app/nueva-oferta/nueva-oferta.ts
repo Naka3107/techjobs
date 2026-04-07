@@ -1,5 +1,5 @@
 import { Component, inject, signal } from '@angular/core';
-import { RouterLink , Router } from '@angular/router';
+import {  Router } from '@angular/router';
 import { OfertaService } from '../services/oferta.service';
 import { PAISES } from '../data/paises';
 import { TECNOLOGIAS } from '../data/tecnologias';
@@ -7,7 +7,6 @@ import { HttpClient } from '@angular/common/http';
 
 @Component({
   selector: 'app-nueva-oferta',
-  imports: [RouterLink],
   templateUrl: './nueva-oferta.html',
   styleUrl: './nueva-oferta.scss',
 })
@@ -18,6 +17,7 @@ export class NuevaOferta {
 
   puesto = signal ('');
   salario = signal(0);
+  experienciaMinima = signal(0);
   ciudad = signal('');
   pais = signal('');
   cargando = signal(false);
@@ -81,6 +81,7 @@ export class NuevaOferta {
     this.service.crearOferta({
       puesto: this.puesto(),
       salario: this.salario(),
+      experiencia_minima: this.experienciaMinima(),
       pais: this.pais(),
       ciudad: this.ciudad(),
       tecnologias: this.tecnologiasSeleccionadas()
